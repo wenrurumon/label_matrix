@@ -1,6 +1,7 @@
 
 rm(list=ls())
 setwd('C:\\Users\\zhu2\\Documents\\sohu\\20170220')
+
 library(data.table)
 library(dplyr)
 library(bit64)
@@ -16,8 +17,11 @@ filter_odd_dur <- function(x){
   x$time <- as.POSIXct(x$time)
   x <- arrange(x,time)
   time2 <- c(diff(as.POSIXlt(x$time)),Inf)
-  timefilter <- (time2>(x$dur/3))
-  filter(x,timefilter)
+  dur.adj <- apply(cbind(time2,x$dur),1,min)
+  timefilter <- (dur.adj>(x$dur/3))
+  x <- filter(x,timefilter)
+  x$dur <- dur.adj[timefilter]
+  x
 }
 
 summarise_by_uid <- function(x){
@@ -93,7 +97,18 @@ setwd('..');setwd('data')
 
 #Load data, do it in parallel instead of lapply
 raw <- lapply(dir(),processdata)
+
+#pretend we did it in parallel
 raw <- do.call(c,raw)
+# uidname <- unique(names(raw))
+# raw <- lapply(uidname,function(uid){
+#   x <- do.call(rbind,raw[names(raw)==uid])
+#   x %>% grou_by(uid,cid) %>% summarise(n=sum(n),dur=sum(dur))
+# })
+
+raw.ncid <- sapply(raw,nrow)
+raw <- raw[raw.ncid>=quantile(raw.ncid,0.1) & raw.ncid<=quantile(raw.ncid,0.9)]
+#backup <- list(); backup$raw <- raw
 
 ##############################
 # copy matrix
@@ -103,20 +118,48 @@ raw <- do.call(c,raw)
 
 raw2 <- do.call(rbind,raw)
 c.filter <- raw2 %>% group_by(cid) %>% summarise(n=n_distinct(uid))
-c.filter <- filter(c.filter,n>=10)$cid
+c.filter <- filter(c.filter,n>=30)$cid
 raw2 <- filter(raw2,cid%in%c.filter)
+#backup$raw2 <- raw2
 
 #go for copy matrix
 
-cmat <- sqldf('select a.cid as cidi, b.cid as cidj, sum(a.dur) as duri, sum(b.dur) as durj
+cmat <- sqldf('select a.cid as cidi, b.cid as cidj, 
+                  sum(a.dur) as duri, sum(b.dur) as durj,
+                  sum(a.n) as ni, sum(b.n) as nj,
+                  count(*) as nuid
               from raw2 a left join raw2 b
               on a.uid = b.uid
               group by cidi,cidj;')
-
 cmat$cidi <- match(cmat$cidi,c.filter)
 cmat$cidj <- match(cmat$cidj,c.filter)
 almap <- al2[match(c.filter,al$alid),]
-cmat <- mutate(cmat,score=as.numeric(duri)+as.numeric(durj))
+#backup$cmat <- cmat; backup$almap <- almap
+#################################################################
+#End of data process
+#################################################################
+#################################################################
+
+##############################
+# Calculation for the network
+##############################
+
+cmaster <- as.data.table(
+  cmat %>% 
+    group_by(cidi) %>% 
+    summarise(dur=max(duri),tdur=sum(durj)-max(duri),n=max(ni),nuid=max(nuid),ncid=n_distinct(cidj)-1)
+)
+ccalc <- filter(cmat,cidi!=cidj)
+ccalc <- data.table(ccalc,
+  select(cmaster[match(ccalc$cidi,cmaster$cidi)],ttduri=tdur,tduri=dur,tni=n,nui=nuid,nci=ncid),
+  select(cmaster[match(ccalc$cidj,cmaster$cidi)],ttdurj=tdur,tdurj=dur,tnj=n,nuj=nuid,ncj=ncid))
+ccalc <- mutate(ccalc,
+                si=duri/((nuid/nui)*ttduri),sj=durj/((nuid/nuj)*ttdurj),
+                ri=tduri/ttduri,rj=tdurj/ttdurj,
+                vi=si/ri,vj=sj/rj
+                )
+ccalc2 <- select(ccalc,cidi,cidj,si,sj,ri,rj,vi,vj)
+
 
 ##############################
 # Label Matrix
@@ -124,4 +167,4 @@ cmat <- mutate(cmat,score=as.numeric(duri)+as.numeric(durj))
 
 cmax <- simple_triplet_matrix(cmat$cidi,cmat$cidj,cmat$score)
 cmax <- (cmax <- as.matrix(cmax)) / outer(diag(cmax),diag(cmax),'+') * 2
-
+heatmap(cmax)
