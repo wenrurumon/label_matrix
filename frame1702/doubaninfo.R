@@ -45,6 +45,7 @@ getinfo('少女时代')
 # getinfo('生活大爆炸')
 # getinfo('喜羊羊与灰太狼')
 
+#测试
 load("C:/Users/WenluluSens/Documents/Project/SohuVedio/rdata_jinqi/gmax_lable.RData")
 s <- paste0(names(gmax_lable),"<-gmax_lable$",names(gmax_lable))
 for(si in s){
@@ -53,4 +54,10 @@ for(si in s){
 library(dplyr);library(data.table)
 moviename <- unique(filter(gnamemap,cclass=='电影')$gname)
 test <- lapply(moviename[41:50],getinfo,wait=5)
- test2 <- lapply(moviename[11:40],getinfo,wait=5)
+test2 <- lapply(moviename[11:40],getinfo,wait=5)
+
+#考虑到可能会突然断档
+rlt <- list()
+for(i in 1:10){
+  rlt[[i]] <- getinfo(moviename[i],wait=5)
+}
