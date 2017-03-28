@@ -28,6 +28,7 @@ getdoubaninfo <- function(url,wait=5){
   names(web.summary) <- gsub(":","",web.label)
   web.story <- gsub("　| |\n","",web %>% html_nodes("#link-report") %>% html_text())
   name <- gsub(' |\n','',web %>% html_nodes('#content h1')%>%html_text())
+  print(name)
   c(url=url,name=name,web.summary,'剧情'=web.story)
 }
 
@@ -51,5 +52,5 @@ for(si in s){
 }
 library(dplyr);library(data.table)
 moviename <- unique(filter(gnamemap,cclass=='电影')$gname)
-test <- lapply(moviename[1:10],getinfo,wait=5)
-test2 <- lapply(moviename[11:40],getinfo,wait=5)
+test <- lapply(moviename[41:50],getinfo,wait=5)
+ test2 <- lapply(moviename[11:40],getinfo,wait=5)
