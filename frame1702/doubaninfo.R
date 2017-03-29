@@ -9,7 +9,7 @@ library(rvest)
 
 movie <- c('少女时代', '生活大爆炸', '喜羊羊与灰太狼')
 movie_url <- function(x,wait=5){
-  print(x)
+  cat(x)
   x <- URLencode(stri_enc_toutf8(x))
   Sys.sleep(wait)
   url <- paste0('https://www.douban.com/search?cat=1002&q=',x,'&enc=utf-8')
@@ -35,13 +35,13 @@ getdoubaninfo <- function(url,wait=5){
 getinfo <- function(key,wait=5){
   url.douban <- movie_url(key,wait)
   if(is.na(url.douban)){
-      return(c(key,NA))
-    } else {
-      info.douban <- getdoubaninfo(url.douban,wait)
-      return(c(key,info.douban))
+    return(c(key,NA))
+  } else {
+    info.douban <- getdoubaninfo(url.douban,wait)
+    return(c(key,info.douban))
   }
 }
-getinfo('少女时代')
+# getinfo('少女时代')
 # getinfo('生活大爆炸')
 # getinfo('喜羊羊与灰太狼')
 
@@ -52,12 +52,23 @@ for(si in s){
   eval(parse(text=si))
 }
 library(dplyr);library(data.table)
-moviename <- unique(filter(gnamemap,cclass=='电影')$gname)
-test <- lapply(moviename[41:50],getinfo,wait=5)
-test2 <- lapply(moviename[11:40],getinfo,wait=5)
 
-#考虑到可能会突然断档
+alsel <- filter(al,gid%in%gnamemap$gid)
+alsel <- alsel[match(unique(alsel$gid),alsel$gid),]$cname
+
 rlt <- list()
-for(i in 1:10){
-  rlt[[i]] <- getinfo(moviename[i],wait=5)
+
+i <- 1
+while(i<=length(alsel)){
+  copy <- alsel[i]
+  rlti <- try(getinfo(copy,wait=rnorm(1,5,1)))
+  j <- 0
+  while(class(rlti)=='try-error'){
+    j <- j+0.5
+    print(paste('mining pause at',Sys.time(),'and copy',i,copy))
+    Sys.sleep(60*60*j)
+    rlti <- try(getinfo(copy,wait=rnorm(1,5,1)))
+  }
+  i <- i+1
+  rlt[[i]] <- rlti
 }
