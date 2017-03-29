@@ -91,4 +91,27 @@ print(test <- check_copy_clustering(rownames(lmax),.999,lmax))
 print(test <- check_copy_clustering(test[[1]],.99,lmax))
 print(test <- check_copy_clustering(test[[1]],.99,lmax))
 
+###########################
+#Copy clustering with correlation matrix
 
+copy.cormax <- cor(t(lmax))
+diag(copy.cormax) <- 0
+copy.cormax <- (pnorm((copy.cormax-mean(copy.cormax))/sd(copy.cormax-mean(copy.cormax)))-.5)*2
+hist(as.vector(copy.cormax))
+
+g <- copy.cormax >= 0.9
+dimnames(gmax) <- dimnames(copy.cormax)
+g <- gmax >= 0.8
+
+g <- igraph::graph_from_adjacency_matrix(g)
+
+# ec <- eigen_centrality(g, directed = FALSE)$vector
+# pg <- page_rank(g, damping = 0.999)$vector
+w <- random_walk(g, start = 1, steps = 100000)
+table.w <- table(w);length(unique(table.w))
+
+cluster.w <- lapply(unique(table.w),function(i){
+  names(w)[which(table.w==i)]
+})
+length(cluster.w)
+head(cluster.w)
