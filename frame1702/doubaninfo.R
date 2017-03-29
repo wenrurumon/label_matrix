@@ -64,7 +64,7 @@ while(i<=length(alsel)){
   rlti <- try(getinfo(copy,wait=rnorm(1,5,1)))
   j <- 0
   while(class(rlti)=='try-error'){
-    j <- j+0.5
+    j <- max(j+0.5,2)
     print(paste('mining pause at',Sys.time(),'and copy',i,copy))
     Sys.sleep(60*60*j)
     rlti <- try(getinfo(copy,wait=rnorm(1,5,1)))
