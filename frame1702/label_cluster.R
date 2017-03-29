@@ -1,3 +1,4 @@
+
 ######################
 #load data
 
@@ -71,11 +72,16 @@ for(i in 1:ncol(labels)){
 check_copy_clustering <- function(copy.given,thres,lmax){
   lmax.given <- lmax[rownames(lmax)%in%copy.given,]
   lhc.given <- hclust(dist(lmax.given))
+  plot(lhc.given)
   label.given <- cutree(lhc.given,2)
   apply(predict(lda(label.given~lmax.given))[[2]],2,function(x){names(which(x>=thres))})
 }
 
-test <- check_copy_clustering(rownames(lmax)[abs(lmax[,2])>=0.5],.99,lmax)
+test <- check_copy_clustering(rownames(lmax)[abs(lmax[,2])>=0.96],.99,lmax)
+test <- check_copy_clustering(rownames(lmax)[labels[,2]==1],.95,lmax)
+test <- check_copy_clustering(sample(filter(gid,cclass=="动漫")$gname,100),.99,lmax)
+
+
 par(mfrow=c(2,1))
 hist(lmax[match(test[[1]],rownames(lmax)),1])
 hist(lmax[match(test[[2]],rownames(lmax)),1])
@@ -84,6 +90,5 @@ par(mfrow=c(1,1))
 print(test <- check_copy_clustering(rownames(lmax),.999,lmax))
 print(test <- check_copy_clustering(test[[1]],.99,lmax))
 print(test <- check_copy_clustering(test[[1]],.99,lmax))
-
 
 
