@@ -11,12 +11,13 @@ rawdata <- lapply(fd,function(x){
 	setwd('/zfsauton/project/highmark/aska/wx/data')
 	setwd(x)
 	fs <- dir()
-  rawi <- lapply(fs,function(fi){
+  	rawi <- lapply(fs,function(fi){
+		print(fi)
 		x <- fread(fi,integer64='numeric')
 		x$cid <- gsub('【|】(.*)|\\[|\\](.*)','',x$V4)
-    colnames(x) <- c('uid','fb','time','log','fbcode','client','cid')
-    x
+    		colnames(x) <- c('uid','fb','time','log','fbcode','client','cid')
+    		return(x)
 	})
-  return(rawi)
+	return(rawi)
 })
 rawdata <- do.call(c,rawdata)
