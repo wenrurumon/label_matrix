@@ -21,3 +21,16 @@ rawdata <- lapply(fd,function(x){
 	return(rawi)
 })
 rawdata <- do.call(c,rawdata)
+
+#Save rawdata
+setwd('/zfsauton/project/highmark/aska/wx/data/rda')
+idx <- 1:length(rawdata)
+idx <- as.numeric(cut(idx,70))
+for(i in unique(idx)){
+	rawi <- rawdata[idx==i]
+	print(i)
+	save(rawi,file=paste0('rawdata_',i,'.rda'))
+}
+
+
+
