@@ -50,12 +50,39 @@ trans <- sqldf(
 trans <- unique(trans)
 trans <- trans[sample(1:nrow(trans),nrow(trans)*0.1),]
 
+#copy matrix
+ccscript <- sqldf(
+  'select a.copy as copyi, b.copy as copyj, count(1) as count
+  from trans a left join trans b
+  where a.user = b.user
+  group by a.copy, b.copy'
+)
+ccmst <- filter(ccscript,copyi == copyj)
+ccscript2 <- sqldf(
+  '
+  select a.copyi, a.copyj, a.count as countij, 
+          b.count as countj
+  from ccscript a left join ccmst b
+  on a.copyj = b.copyi
+  group by a.copyi, a.copyj
+  '
+)
+ccscript2 <- mutate(ccscript2,score=countij/countj)
+ccmat <- slam::simple_triplet_matrix(
+  match(ccscript2$copyi,paste0('c',1:25)),
+  match(ccscript2$copyj,paste0('c',1:25)),
+  ccscript2$score
+)
+dimnames(ccmat) <- list(paste0('c',1:25),paste0('c',1:25))
+ccmat <- as.matrix(ccmat)
+
 #label one
 clabel2 <- clabel_bk
 for(i in 1:nrow(clabel_bk)){
   sel <- which(clabel_bk[i,]!=0)
   clabel2[i,sample(sel,length(sel)-1)] <- 0
 }
+# clabel2 <-  (ccmat/rowSums(ccmat)) %*% clabel2
 clabel2 <- filter(reshape::melt(clabel2),value!=0)
 colnames(clabel2)[1:2] <- c('copy','label1')
 
@@ -76,3 +103,7 @@ ulabel2 <- sqldf(
   group by a.user, a.label
   '
 )
+ulabel2 <- filter(ulabel2,!is.na(val2))
+cor(ulabel2$val1,ulabel2$val2)
+test <- table(ulabel2$val1,ulabel2$val2)
+(test[nrow(test),1] + test[1,ncol(test)])/sum(test)
