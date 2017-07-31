@@ -1,4 +1,3 @@
-
 library(reshape)
 library(data.table)
 library(dplyr)
@@ -7,12 +6,13 @@ library(slam)
 library(igraph)
 
 rm(list=ls())
+set.seed(1)
 qpca <- function(A,rank=0){
   A.svd <- svd(A)
   if(rank>0&rank<ncol(A)){
-  lambda <- A.svd$d[rank]*0.99 + A.svd$d[rank+1]*0.01
+    lambda <- A.svd$d[rank]*0.99 + A.svd$d[rank+1]*0.01
   } else {
-  lambda <- 0
+    lambda <- 0
   }
   d <- A.svd$d-lambda
   d <- d[d > 1e-8]
